@@ -5,6 +5,20 @@ services:
     image: "prom/prometheus:v2.30.0"
     ports:
       - "9090:9090"
+    volumes:
+      - type: bind
+        source: ./prometheus/prometheus.yml
+        target: /etc/prometheus/prometheus.yml
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    network_mode: host
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    restart: always
+    volumes:
+      - '/:/host:ro,rslave'
   grafana:
     restart: "always"
     image: "grafana/grafana:8.1.4"
