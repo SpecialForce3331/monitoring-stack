@@ -1,0 +1,23 @@
+version: "3.9"
+services:
+  prometheus:
+    restart: "always"
+    image: "prom/prometheus:v2.30.0"
+    ports:
+      - "9090:9090"
+  grafana:
+    restart: "always"
+    image: "grafana/grafana:8.1.4"
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: qwerty
+      DS_PROMETHEUS: http://prometheus:9090
+    volumes:
+      - type: bind
+        source: ./grafana/datasources
+        target: /etc/grafana/provisioning/datasources
+      - type: bind
+        source: ./grafana/dashboards
+        target: /etc/grafana/provisioning/dashboards
