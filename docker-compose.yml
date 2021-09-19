@@ -5,6 +5,7 @@ services:
     image: "prom/prometheus:v2.30.0"
     ports:
       - "9090:9090"
+    network_mode: host
     volumes:
       - type: bind
         source: ./prometheus/prometheus.yml
@@ -22,12 +23,12 @@ services:
   grafana:
     restart: "always"
     image: "grafana/grafana:8.1.4"
+    network_mode: host
     ports:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: qwerty
-      DS_PROMETHEUS: http://prometheus:9090
     volumes:
       - type: bind
         source: ./grafana/datasources
