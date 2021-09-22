@@ -8,6 +8,9 @@ services:
       - type: bind
         source: ./prometheus/prometheus.yml
         target: /etc/prometheus/prometheus.yml
+      - type: volume
+        source: prometheus_volume
+        target: /prometheus
   node_exporter:
     image: quay.io/prometheus/node-exporter:latest
     container_name: node_exporter
@@ -18,6 +21,12 @@ services:
     restart: always
     volumes:
       - '/:/host:ro'
+  mysqld_exporter:
+    restart: "always"
+    image: "prom/mysqld-exporter"
+    environment:
+      DATA_SOURCE_NAME: "exporter:qwerty@(localhost:3306)/myDB"
+    network_mode: host
   grafana:
     restart: "always"
     image: "grafana/grafana:8.1.4"
@@ -32,3 +41,6 @@ services:
       - type: bind
         source: ./grafana/dashboards
         target: /etc/grafana/provisioning/dashboards
+
+volumes:
+  prometheus_volume:
