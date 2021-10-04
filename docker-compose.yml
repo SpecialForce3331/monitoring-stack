@@ -8,6 +8,9 @@ services:
       - type: bind
         source: ./prometheus/prometheus.yml
         target: /etc/prometheus/prometheus.yml
+      - type: bind
+        source: ./prometheus/alert.rules
+        target: /etc/prometheus/alert.rules
       - type: volume
         source: prometheus_volume
         target: /prometheus
@@ -21,11 +24,40 @@ services:
     restart: always
     volumes:
       - '/:/host:ro'
+  alertmanager:
+    image: "prom/alertmanager"
+    restart: "always"
+    network_mode: host
+    volumes:
+      - type: bind
+        source: ./alertmanager/alertmanager.yml
+        target: /etc/alertmanager/alertmanager.yml
+  alertmanager-bot:
+    command:
+    - --alertmanager.url=http://localhost:9093
+    - --log.level=debug
+    - --store=bolt
+    - --bolt.path=/data/bot.db
+    - --telegram.admin=99281854
+    - --telegram.admin=360924457
+    environment:
+      TELEGRAM_TOKEN: "${TELEGRAM_TOKEN}"
+    image: metalmatze/alertmanager-bot:0.4.3
+    network_mode: host
+    restart: always
+    volumes:
+    - type: volume
+      source: alertmanager_bot_volume
+      target: /data
   mysqld_exporter:
     restart: "always"
     image: "prom/mysqld-exporter"
     environment:
-      DATA_SOURCE_NAME: "exporter:qwerty@(localhost:3306)/myDB"
+      DATA_SOURCE_NAME: "${MYSQL_EXPORTER_DATASOURCE}"
+    network_mode: host
+  blackbox_exporter:
+    restart: "always"
+    image: "prom/blackbox-exporter"
     network_mode: host
   grafana:
     restart: "always"
@@ -44,3 +76,4 @@ services:
 
 volumes:
   prometheus_volume:
+  alertmanager_bot_volume:

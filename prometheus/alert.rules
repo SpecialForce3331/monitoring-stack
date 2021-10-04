@@ -1,0 +1,116 @@
+groups:
+- name: test
+  rules:
+  - alert: Test
+    expr: node_memory_MemAvailable_bytes < 0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: Test alert
+
+- name: host
+  rules:
+  - alert: HostOutOfMemory
+    expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: Host out of memory (instance {{ $labels.instance }})
+      description: "Node memory is filling up (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: HostOutOfDiskSpace
+    expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: Host out of disk space (instance {{ $labels.instance }})
+      description: "Disk is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: HostOutOfInodes
+    expr: node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: Host out of inodes (instance {{ $labels.instance }})
+      description: "Disk is almost running out of available inodes (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: HostHighCpuLoad
+    expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+    for: 10m
+    labels:
+      severity: warning
+    annotations:
+      summary: Host high CPU load (instance {{ $labels.instance }})
+      description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: HostOomKillDetected
+    expr: increase(node_vmstat_oom_kill[1m]) > 0
+    for: 0m
+    labels:
+      severity: warning
+    annotations:
+      summary: Host OOM kill detected (instance {{ $labels.instance }})
+      description: "OOM kill detected\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+- name: blackbox
+  rules:
+  - alert: BlackboxProbeFailed
+    expr: probe_success == 0
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: Blackbox probe failed (instance {{ $labels.instance }})
+      description: "Probe failed\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: BlackboxSlowProbe
+    expr: avg_over_time(probe_duration_seconds[1m]) > 1
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: Blackbox slow probe (instance {{ $labels.instance }})
+      description: "Blackbox probe took more than 1s to complete\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: BlackboxProbeHttpFailure
+    expr: probe_http_status_code <= 199 OR probe_http_status_code >= 400
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: Blackbox probe HTTP failure (instance {{ $labels.instance }})
+      description: "HTTP status code is not 200-399\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+- name: MySQL
+  rules:
+  - alert: MysqlDown
+    expr: mysql_up == 0
+    for: 0m
+    labels:
+      severity: critical
+    annotations:
+      summary: MySQL down (instance {{ $labels.instance }})
+      description: "MySQL instance is down on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: MysqlTooManyConnections(>80%)
+    expr: avg by (instance) (rate(mysql_global_status_threads_connected[1m])) / avg by (instance) (mysql_global_variables_max_connections) * 100 > 80
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: MySQL too many connections (> 80%) (instance {{ $labels.instance }})
+      description: "More than 80% of MySQL connections are in use on {{ $labels.instance }}\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+  - alert: MysqlSlowQueries
+    expr: increase(mysql_global_status_slow_queries[1m]) > 0
+    for: 2m
+    labels:
+      severity: warning
+    annotations:
+      summary: MySQL slow queries (instance {{ $labels.instance }})
+      description: "MySQL server mysql has some new slow query.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
